@@ -1,11 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { auth } from '../firebase';
-// FIX: Using Firebase v9 compatibility syntax to fix import errors.
-import firebase from 'firebase/compat/app';
-import 'firebase/compat/auth';
+import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup, User } from 'firebase/auth';
 
-// FIX: Define FirebaseUser type using v9 compat syntax.
-type FirebaseUser = firebase.User;
+type FirebaseUser = User;
 
 interface AuthContextType {
     authUser: FirebaseUser | null;
@@ -36,8 +33,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // FIX: Use v8 onAuthStateChanged method
-        const unsubscribe = auth.onAuthStateChanged((user) => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
             setAuthUser(user);
             setLoading(false);
         });
@@ -45,24 +41,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }, []);
 
     const signup = (email: string, password: string) => {
-        // FIX: Use v8 createUserWithEmailAndPassword method
-        return auth.createUserWithEmailAndPassword(email, password);
+        return createUserWithEmailAndPassword(auth, email, password);
     };
 
     const login = (email: string, password: string) => {
-        // FIX: Use v8 signInWithEmailAndPassword method
-        return auth.signInWithEmailAndPassword(email, password);
+        return signInWithEmailAndPassword(auth, email, password);
     };
 
     const logout = () => {
-        // FIX: Use v8 signOut method
-        return auth.signOut();
+        return signOut(auth);
     };
     
     const loginWithGoogle = () => {
-        // FIX: Use v8 GoogleAuthProvider and signInWithPopup method
-        const provider = new firebase.auth.GoogleAuthProvider();
-        return auth.signInWithPopup(provider);
+        const provider = new GoogleAuthProvider();
+        return signInWithPopup(auth, provider);
     };
 
     const value = {

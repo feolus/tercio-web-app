@@ -11,6 +11,7 @@ import DrillmasterView from './components/DrillmasterView';
 import EscuderoView from './components/EscuderoView';
 import { Role, User, Troop, Weapon, Artillery, BattlePlan, NobilityTitle, Season, TitleAssignment } from './types';
 import { db } from './firebase';
+import { collection, onSnapshot, doc, setDoc, getDoc, getDocs, deleteDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { INITIAL_TROOPS, INITIAL_WEAPONS, INITIAL_ARTILLERY, INITIAL_NOBILITY_TITLES } from './constants';
 
 const MainApp: React.FC = () => {
@@ -70,17 +71,13 @@ const App: React.FC = () => {
 
     // Firestore real-time listeners
     useEffect(() => {
-        // FIX: Use Firebase v8 onSnapshot syntax.
-        const unsubUsers = db.collection('users').onSnapshot((snapshot) => {
+        const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
             setUsers(snapshot.docs.map(doc => doc.data() as User));
         });
 
-        // FIX: Use Firebase v8 doc reference syntax.
-        const masterDataRef = db.collection('masterData').doc('singleton');
-        // FIX: Use Firebase v8 onSnapshot syntax.
-        const unsubMasterData = masterDataRef.onSnapshot(async (docSnap) => {
-            // FIX: Use Firebase v8 docSnap.exists property.
-            if (docSnap.exists) {
+        const masterDataRef = doc(db, 'masterData', 'singleton');
+        const unsubMasterData = onSnapshot(masterDataRef, async (docSnap) => {
+            if (docSnap.exists()) {
                 const data = docSnap.data();
                 setMasterTroops(data.troops || []);
                 setMasterWeapons(data.weapons || []);
@@ -88,8 +85,7 @@ const App: React.FC = () => {
                 setNobilityTitles(data.nobilityTitles || []);
                 setSeasons(data.seasons || []);
             } else {
-                // FIX: Use Firebase v8 set method.
-                await masterDataRef.set({
+                await setDoc(masterDataRef, {
                     troops: INITIAL_TROOPS,
                     weapons: INITIAL_WEAPONS,
                     artillery: INITIAL_ARTILLERY,
@@ -99,13 +95,11 @@ const App: React.FC = () => {
             }
         });
 
-        // FIX: Use Firebase v8 onSnapshot syntax.
-        const unsubBattlePlans = db.collection('battlePlans').onSnapshot((snapshot) => {
+        const unsubBattlePlans = onSnapshot(collection(db, 'battlePlans'), (snapshot) => {
             setSavedBattlePlans(snapshot.docs.map(doc => doc.data() as BattlePlan));
         });
 
-        // FIX: Use Firebase v8 onSnapshot syntax.
-        const unsubAssignments = db.collection('titleAssignments').onSnapshot((snapshot) => {
+        const unsubAssignments = onSnapshot(collection(db, 'titleAssignments'), (snapshot) => {
             setTitleAssignments(snapshot.docs.map(doc => doc.data() as TitleAssignment));
         });
 
@@ -121,17 +115,13 @@ const App: React.FC = () => {
     useEffect(() => {
         const handleUserSession = async () => {
             if (authUser) {
-                // FIX: Use Firebase v8 doc reference syntax.
-                const userRef = db.collection("users").doc(authUser.uid);
-                // FIX: Use Firebase v8 get method.
-                const userSnap = await userRef.get();
+                const userRef = doc(db, "users", authUser.uid);
+                const userSnap = await getDoc(userRef);
 
-                // FIX: Use Firebase v8 docSnap.exists property.
-                if (userSnap.exists) {
+                if (userSnap.exists()) {
                     setCurrentUser(userSnap.data() as User);
                 } else {
-                    // FIX: Use Firebase v8 get method and collection reference.
-                    const isFirstUser = (await db.collection('users').get()).empty;
+                    const isFirstUser = (await getDocs(collection(db, 'users'))).empty;
                     const newUser: User = {
                         uid: authUser.uid,
                         email: authUser.email!,
@@ -140,8 +130,7 @@ const App: React.FC = () => {
                         troops: [],
                         weapons: [],
                     };
-                    // FIX: Use Firebase v8 set method.
-                    await userRef.set(newUser);
+                    await setDoc(userRef, newUser);
                     setCurrentUser(newUser);
                 }
             } else {
@@ -155,42 +144,35 @@ const App: React.FC = () => {
 
     // Firestore update functions
     const updateUser = async (updatedUser: User) => {
-        // FIX: Use Firebase v8 set method with merge option.
-        await db.collection('users').doc(updatedUser.uid).set(updatedUser, { merge: true });
+        await setDoc(doc(db, 'users', updatedUser.uid), updatedUser, { merge: true });
     };
 
     const removeUser = async (uid: string) => {
         if (window.confirm('¿Seguro que quieres eliminar a este usuario? Esta acción es irreversible.')) {
-            // FIX: Use Firebase v8 delete method.
-            await db.collection('users').doc(uid).delete();
+            await deleteDoc(doc(db, 'users', uid));
         }
     };
 
     const updateMasterData = async (dataType: 'troops' | 'weapons' | 'artillery' | 'nobilityTitles' | 'seasons', data: any[]) => {
-        // FIX: Use Firebase v8 update method.
-        await db.collection('masterData').doc('singleton').update({ [dataType]: data });
+        await updateDoc(doc(db, 'masterData', 'singleton'), { [dataType]: data });
     };
 
     const addBattlePlan = async (plan: BattlePlan) => {
-        // FIX: Use Firebase v8 set method.
-        await db.collection('battlePlans').doc(plan.id).set(plan);
+        await setDoc(doc(db, 'battlePlans', plan.id), plan);
     };
 
     const updateBattlePlan = async (plan: BattlePlan) => {
-        await db.collection('battlePlans').doc(plan.id).set(plan, { merge: true });
+        await setDoc(doc(db, 'battlePlans', plan.id), plan, { merge: true });
     };
 
     const deleteBattlePlan = async (planId: string) => {
-        // FIX: Use Firebase v8 delete method.
-        await db.collection('battlePlans').doc(planId).delete();
+        await deleteDoc(doc(db, 'battlePlans', planId));
     };
 
     const updateTitleAssignments = async (assignments: TitleAssignment[]) => {
-        // FIX: Use Firebase v8 db.batch() method. This also resolves the "Cannot find name 'writeBatch'" error.
-        const batch = db.batch();
+        const batch = writeBatch(db);
         assignments.forEach(assignment => {
-            // FIX: Use Firebase v8 doc reference syntax.
-            const docRef = db.collection('titleAssignments').doc(assignment.id);
+            const docRef = doc(db, 'titleAssignments', assignment.id);
             batch.set(docRef, assignment);
         });
         await batch.commit();
