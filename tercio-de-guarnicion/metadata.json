@@ -1,0 +1,5 @@
+{
+  "name": "Tercio de Guarnicion",
+  "description": "Una aplicación web para que los jugadores de Conqueror's Blade administren sus tropas, equipamiento de héroe, y para que los comandantes planifiquen batallas asignando usuarios y sus unidades a grupos estratégicos.",
+  "requestFramePermissions": []
+}
