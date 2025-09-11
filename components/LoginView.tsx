@@ -102,8 +102,8 @@ const LoginView: React.FC = () => {
                         <div className="mt-6">
                            <button onClick={handleGoogleLogin} className="w-full inline-flex justify-center items-center py-2 px-4 border border-slate-300 rounded-md shadow-sm bg-white text-sm font-medium text-slate-500 hover:bg-slate-50">
                                 <span className="sr-only">Iniciar sesión con Google</span>
-                                <svg className="w-5 h-5 mr-2" aria-hidden="true" fill="currentColor" viewBox="0 0 48 48">
-                                    <path d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C12.955 4 4 12.955 4 24s8.955 20 20 20s20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"></path>
+                                <svg className="w-5 h-5 mr-3" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
+                                    <path fill="currentColor" d="M488 261.8C488 403.3 381.5 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 21.5 175.3 58.2L358.5 129.6C322.7 97.7 288.5 80 248 80c-82.6 0-150.2 67.6-150.2 150.2S165.4 406.2 248 406.2c92.2 0 131.3-74.4 135.2-112.2H248v-67.2h240.2c1.3 12.3 1.8 24.9 1.8 37.8z"></path>
                                 </svg>
                                 Google
                            </button>
