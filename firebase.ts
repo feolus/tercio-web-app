@@ -1,7 +1,6 @@
-// FIX: Updated Firebase initialization to use v9 compatibility mode to resolve import errors.
-import firebase from 'firebase/compat/app';
-import 'firebase/compat/auth';
-import 'firebase/compat/firestore';
+import { initializeApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_API_KEY,
@@ -12,12 +11,8 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_APP_ID
 };
 
-// FIX: Ensure Firebase is only initialized once.
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const db = getFirestore(app);
 
-export const auth = firebase.auth();
-export const db = firebase.firestore();
-
-export default firebase.app();
+export default app;
