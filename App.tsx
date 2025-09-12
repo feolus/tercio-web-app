@@ -14,8 +14,19 @@ import { db } from './firebase';
 import { INITIAL_TROOPS, INITIAL_WEAPONS, INITIAL_ARTILLERY, INITIAL_NOBILITY_TITLES } from './constants';
 
 const MainApp: React.FC = () => {
-    const { currentUser } = useContext(UserContext);
+    const { currentUser, error } = useContext(UserContext);
     const { logout } = useAuth();
+
+    if (error) {
+        return (
+            <div className="flex flex-col items-center justify-center h-screen text-center">
+                <h2 className="text-2xl font-bold text-red-600 mb-4">Ha ocurrido un error</h2>
+                <p className="text-slate-700 mb-2">No se pudo cargar el perfil del usuario. Este es el error:</p>
+                <code className="bg-slate-200 text-red-700 p-4 rounded-md text-sm">{error}</code>
+                <p className="mt-4 text-slate-500">Por favor, verifica tu configuración de Firebase y las reglas de seguridad de Firestore.</p>
+            </div>
+        );
+    }
 
     if (!currentUser) {
         return <div className="flex items-center justify-center h-screen"><p>Cargando datos del usuario...</p></div>;
@@ -57,6 +68,7 @@ const App: React.FC = () => {
     // User state
     const [users, setUsers] = useState<User[]>([]);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
     // Data state
     const [masterTroops, setMasterTroops] = useState<Troop[]>([]);
@@ -121,28 +133,33 @@ const App: React.FC = () => {
     useEffect(() => {
         const handleUserSession = async () => {
             if (authUser) {
-                // FIX: Use Firebase v8 doc reference syntax.
-                const userRef = db.collection("users").doc(authUser.uid);
-                // FIX: Use Firebase v8 get method.
-                const userSnap = await userRef.get();
+                try {
+                    // FIX: Use Firebase v8 doc reference syntax.
+                    const userRef = db.collection("users").doc(authUser.uid);
+                    // FIX: Use Firebase v8 get method.
+                    const userSnap = await userRef.get();
 
-                // FIX: Use Firebase v8 docSnap.exists property.
-                if (userSnap.exists) {
-                    setCurrentUser(userSnap.data() as User);
-                } else {
-                    // FIX: Use Firebase v8 get method and collection reference.
-                    const isFirstUser = (await db.collection('users').get()).empty;
-                    const newUser: User = {
-                        uid: authUser.uid,
-                        email: authUser.email!,
-                        name: authUser.displayName || authUser.email!.split('@')[0],
-                        role: isFirstUser ? Role.Commander : Role.Escudero,
-                        troops: [],
-                        weapons: [],
-                    };
-                    // FIX: Use Firebase v8 set method.
-                    await userRef.set(newUser);
-                    setCurrentUser(newUser);
+                    // FIX: Use Firebase v8 docSnap.exists property.
+                    if (userSnap.exists) {
+                        setCurrentUser(userSnap.data() as User);
+                    } else {
+                        // FIX: Use Firebase v8 get method and collection reference.
+                        const isFirstUser = (await db.collection('users').get()).empty;
+                        const newUser: User = {
+                            uid: authUser.uid,
+                            email: authUser.email!,
+                            name: authUser.displayName || authUser.email!.split('@')[0],
+                            role: isFirstUser ? Role.Commander : Role.Escudero,
+                            troops: [],
+                            weapons: [],
+                        };
+                        // FIX: Use Firebase v8 set method.
+                        await userRef.set(newUser);
+                        setCurrentUser(newUser);
+                    }
+                } catch (err: any) {
+                    console.error("Error handling user session:", err);
+                    setError(`Error al cargar el perfil: ${err.message}`);
                 }
             } else {
                 setCurrentUser(null);
@@ -196,7 +213,7 @@ const App: React.FC = () => {
         await batch.commit();
     };
 
-    const userContextValue: UserContextType = { users, currentUser, updateUser, removeUser };
+    const userContextValue: UserContextType = { users, currentUser, error, updateUser, removeUser };
     const dataContextValue: DataContextType = {
         masterTroops, masterWeapons, masterArtillery, savedBattlePlans,
         activeWarOrderPlanId, nobilityTitles, seasons, titleAssignments,
