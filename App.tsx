@@ -17,7 +17,6 @@ import {
     doc,
     setDoc,
     getDoc,
-    getDocs,
     deleteDoc,
     updateDoc,
     writeBatch,
