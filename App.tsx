@@ -144,13 +144,12 @@ const App: React.FC = () => {
                     if (userSnap.exists()) {
                         setCurrentUser(userSnap.data() as User);
                     } else {
-                        const usersCollection = collection(db, 'users');
-                        const isFirstUser = (await getDocs(usersCollection)).empty;
+                        // Default all new users to Escudero to avoid needing list permissions on the users collection.
                         const newUser: User = {
                             uid: authUser.uid,
                             email: authUser.email!,
                             name: authUser.displayName || authUser.email!.split('@')[0],
-                            role: isFirstUser ? Role.Commander : Role.Escudero,
+                            role: Role.Escudero,
                             troops: [],
                             weapons: [],
                         };
