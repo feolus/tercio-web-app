@@ -86,11 +86,9 @@ const App: React.FC = () => {
 
     const { authUser, loading } = useAuth();
     
-    // User state
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    // Data state
     const [masterTroops, setMasterTroops] = useState<Troop[]>([]);
     const [masterWeapons, setMasterWeapons] = useState<Weapon[]>([]);
     const [masterArtillery, setMasterArtillery] = useState<Artillery[]>([]);
@@ -100,7 +98,6 @@ const App: React.FC = () => {
     const [seasons, setSeasons] = useState<Season[]>([]);
     const [titleAssignments, setTitleAssignments] = useState<TitleAssignment[]>([]);
 
-    // Firestore real-time listeners
     useEffect(() => {
         if (!db) return;
 
@@ -139,7 +136,6 @@ const App: React.FC = () => {
         };
     }, []);
 
-    // Handle user session and profile creation
     useEffect(() => {
         if (!db) return;
         const handleUserSession = async () => {
@@ -175,7 +171,6 @@ const App: React.FC = () => {
         }
     }, [authUser, loading]);
 
-    // Firestore update functions
     const updateUser = async (updatedUser: User) => {
         if (!db) return;
         await setDoc(doc(db, 'users', updatedUser.uid), updatedUser, { merge: true });
