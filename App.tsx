@@ -10,12 +10,33 @@ import CapitanView from './components/CapitanView';
 import DrillmasterView from './components/DrillmasterView';
 import EscuderoView from './components/EscuderoView';
 import { Role, User, Troop, Weapon, Artillery, BattlePlan, NobilityTitle, Season, TitleAssignment } from './types';
-import { db } from './firebase';
+import { db, firebaseInitializationError } from './firebase';
+import {
+    collection,
+    onSnapshot,
+    doc,
+    setDoc,
+    getDoc,
+    deleteDoc,
+    updateDoc,
+    writeBatch,
+} from 'firebase/firestore';
 import { INITIAL_TROOPS, INITIAL_WEAPONS, INITIAL_ARTILLERY, INITIAL_NOBILITY_TITLES } from './constants';
 
 const MainApp: React.FC = () => {
-    const { currentUser } = useContext(UserContext);
+    const { currentUser, error } = useContext(UserContext);
     const { logout } = useAuth();
+
+    if (error) {
+        return (
+            <div className="flex flex-col items-center justify-center h-screen text-center">
+                <h2 className="text-2xl font-bold text-red-600 mb-4">Ha ocurrido un error</h2>
+                <p className="text-slate-700 mb-2">No se pudo cargar el perfil del usuario. Este es el error:</p>
+                <code className="bg-slate-200 text-red-700 p-4 rounded-md text-sm">{error}</code>
+                <p className="mt-4 text-slate-500">Por favor, verifica tu configuración de Firebase y las reglas de seguridad de Firestore.</p>
+            </div>
+        );
+    }
 
     if (!currentUser) {
         return <div className="flex items-center justify-center h-screen"><p>Cargando datos del usuario...</p></div>;
@@ -52,11 +73,23 @@ const MainApp: React.FC = () => {
 };
 
 const App: React.FC = () => {
+    if (firebaseInitializationError) {
+        return (
+            <div className="flex flex-col items-center justify-center h-screen text-center p-8">
+                <h2 className="text-2xl font-bold text-red-600 mb-4">Error de Configuración</h2>
+                <p className="text-slate-700 mb-2">No se pudo iniciar la aplicación debido a un error de configuración de Firebase.</p>
+                <code className="bg-slate-200 text-red-700 p-4 rounded-md text-sm w-full max-w-2xl overflow-x-auto">{firebaseInitializationError.message}</code>
+                <p className="mt-4 text-slate-500">Por favor, asegúrate de que todas las variables de entorno necesarias estén configuradas correctamente en tu proveedor de hosting (por ejemplo, Netlify).</p>
+            </div>
+        );
+    }
+
     const { authUser, loading } = useAuth();
     
     // User state
     const [users, setUsers] = useState<User[]>([]);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
     // Data state
     const [masterTroops, setMasterTroops] = useState<Troop[]>([]);
@@ -70,17 +103,15 @@ const App: React.FC = () => {
 
     // Firestore real-time listeners
     useEffect(() => {
-        // FIX: Use Firebase v8 onSnapshot syntax.
-        const unsubUsers = db.collection('users').onSnapshot((snapshot) => {
+        if (!db) return;
+
+        const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
             setUsers(snapshot.docs.map(doc => doc.data() as User));
         });
 
-        // FIX: Use Firebase v8 doc reference syntax.
-        const masterDataRef = db.collection('masterData').doc('singleton');
-        // FIX: Use Firebase v8 onSnapshot syntax.
-        const unsubMasterData = masterDataRef.onSnapshot(async (docSnap) => {
-            // FIX: Use Firebase v8 docSnap.exists property.
-            if (docSnap.exists) {
+        const masterDataRef = doc(db, 'masterData', 'singleton');
+        const unsubMasterData = onSnapshot(masterDataRef, async (docSnap) => {
+            if (docSnap.exists()) {
                 const data = docSnap.data();
                 setMasterTroops(data.troops || []);
                 setMasterWeapons(data.weapons || []);
@@ -88,8 +119,7 @@ const App: React.FC = () => {
                 setNobilityTitles(data.nobilityTitles || []);
                 setSeasons(data.seasons || []);
             } else {
-                // FIX: Use Firebase v8 set method.
-                await masterDataRef.set({
+                await setDoc(masterDataRef, {
                     troops: INITIAL_TROOPS,
                     weapons: INITIAL_WEAPONS,
                     artillery: INITIAL_ARTILLERY,
@@ -99,13 +129,11 @@ const App: React.FC = () => {
             }
         });
 
-        // FIX: Use Firebase v8 onSnapshot syntax.
-        const unsubBattlePlans = db.collection('battlePlans').onSnapshot((snapshot) => {
+        const unsubBattlePlans = onSnapshot(collection(db, 'battlePlans'), (snapshot) => {
             setSavedBattlePlans(snapshot.docs.map(doc => doc.data() as BattlePlan));
         });
 
-        // FIX: Use Firebase v8 onSnapshot syntax.
-        const unsubAssignments = db.collection('titleAssignments').onSnapshot((snapshot) => {
+        const unsubAssignments = onSnapshot(collection(db, 'titleAssignments'), (snapshot) => {
             setTitleAssignments(snapshot.docs.map(doc => doc.data() as TitleAssignment));
         });
 
@@ -119,32 +147,46 @@ const App: React.FC = () => {
 
     // Handle user session and profile creation
     useEffect(() => {
+        if (!db) return;
         const handleUserSession = async () => {
+            console.log("handleUserSession triggered");
             if (authUser) {
-                // FIX: Use Firebase v8 doc reference syntax.
-                const userRef = db.collection("users").doc(authUser.uid);
-                // FIX: Use Firebase v8 get method.
-                const userSnap = await userRef.get();
+                console.log("Authenticated user found:", authUser.uid);
+                try {
+                    const userRef = doc(db, "users", authUser.uid);
+                    console.log("Getting user document from Firestore...");
+                    const userSnap = await getDoc(userRef);
+                    console.log("Got user document snapshot.");
 
-                // FIX: Use Firebase v8 docSnap.exists property.
-                if (userSnap.exists) {
-                    setCurrentUser(userSnap.data() as User);
-                } else {
-                    // FIX: Use Firebase v8 get method and collection reference.
-                    const isFirstUser = (await db.collection('users').get()).empty;
-                    const newUser: User = {
-                        uid: authUser.uid,
-                        email: authUser.email!,
-                        name: authUser.displayName || authUser.email!.split('@')[0],
-                        role: isFirstUser ? Role.Commander : Role.Escudero,
-                        troops: [],
-                        weapons: [],
-                    };
-                    // FIX: Use Firebase v8 set method.
-                    await userRef.set(newUser);
-                    setCurrentUser(newUser);
+                    if (userSnap.exists()) {
+                        console.log("User document exists. Setting current user.");
+                        setCurrentUser(userSnap.data() as User);
+                        console.log("Current user set.");
+                    } else {
+                        console.log("User document does not exist. Creating new user profile.");
+                        const newUser: User = {
+                            uid: authUser.uid,
+                            email: authUser.email!,
+                            name: authUser.displayName || authUser.email!.split('@')[0],
+                            role: Role.Commander,
+                            troops: [],
+                            weapons: [],
+                        };
+                        console.log("New user object created:", newUser);
+                        console.log("Attempting to set new user document in Firestore...");
+                        await setDoc(userRef, newUser);
+                        console.log("Successfully set new user document in Firestore.");
+                        console.log("Setting current user state with new user data...");
+                        setCurrentUser(newUser);
+                        console.log("Current user state set with new user data.");
+                    }
+                } catch (err: any) {
+                    console.error("!!! CRITICAL ERROR in handleUserSession:", err);
+                    setError(`Error al cargar el perfil: ${err.message}`);
+                    console.log("Error state has been set.");
                 }
             } else {
+                console.log("No authenticated user found. Setting current user to null.");
                 setCurrentUser(null);
             }
         };
@@ -155,48 +197,48 @@ const App: React.FC = () => {
 
     // Firestore update functions
     const updateUser = async (updatedUser: User) => {
-        // FIX: Use Firebase v8 set method with merge option.
-        await db.collection('users').doc(updatedUser.uid).set(updatedUser, { merge: true });
+        if (!db) return;
+        await setDoc(doc(db, 'users', updatedUser.uid), updatedUser, { merge: true });
     };
 
     const removeUser = async (uid: string) => {
+        if (!db) return;
         if (window.confirm('¿Seguro que quieres eliminar a este usuario? Esta acción es irreversible.')) {
-            // FIX: Use Firebase v8 delete method.
-            await db.collection('users').doc(uid).delete();
+            await deleteDoc(doc(db, 'users', uid));
         }
     };
 
     const updateMasterData = async (dataType: 'troops' | 'weapons' | 'artillery' | 'nobilityTitles' | 'seasons', data: any[]) => {
-        // FIX: Use Firebase v8 update method.
-        await db.collection('masterData').doc('singleton').update({ [dataType]: data });
+        if (!db) return;
+        await updateDoc(doc(db, 'masterData', 'singleton'), { [dataType]: data });
     };
 
     const addBattlePlan = async (plan: BattlePlan) => {
-        // FIX: Use Firebase v8 set method.
-        await db.collection('battlePlans').doc(plan.id).set(plan);
+        if (!db) return;
+        await setDoc(doc(db, 'battlePlans', plan.id), plan);
     };
 
     const updateBattlePlan = async (plan: BattlePlan) => {
-        await db.collection('battlePlans').doc(plan.id).set(plan, { merge: true });
+        if (!db) return;
+        await setDoc(doc(db, 'battlePlans', plan.id), plan, { merge: true });
     };
 
     const deleteBattlePlan = async (planId: string) => {
-        // FIX: Use Firebase v8 delete method.
-        await db.collection('battlePlans').doc(planId).delete();
+        if (!db) return;
+        await deleteDoc(doc(db, 'battlePlans', planId));
     };
 
     const updateTitleAssignments = async (assignments: TitleAssignment[]) => {
-        // FIX: Use Firebase v8 db.batch() method. This also resolves the "Cannot find name 'writeBatch'" error.
-        const batch = db.batch();
+        if (!db) return;
+        const batch = writeBatch(db);
         assignments.forEach(assignment => {
-            // FIX: Use Firebase v8 doc reference syntax.
-            const docRef = db.collection('titleAssignments').doc(assignment.id);
+            const docRef = doc(db, 'titleAssignments', assignment.id);
             batch.set(docRef, assignment);
         });
         await batch.commit();
     };
 
-    const userContextValue: UserContextType = { users, currentUser, updateUser, removeUser };
+    const userContextValue: UserContextType = { users, currentUser, error, updateUser, removeUser };
     const dataContextValue: DataContextType = {
         masterTroops, masterWeapons, masterArtillery, savedBattlePlans,
         activeWarOrderPlanId, nobilityTitles, seasons, titleAssignments,

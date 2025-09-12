@@ -1,23 +1,40 @@
-// FIX: Updated Firebase initialization to use v9 compatibility mode to resolve import errors.
-import firebase from 'firebase/compat/app';
-import 'firebase/compat/auth';
-import 'firebase/compat/firestore';
+import { initializeApp, FirebaseApp } from 'firebase/app';
+import { getAuth, Auth } from 'firebase/auth';
+import { getFirestore, Firestore } from 'firebase/firestore';
 
-const firebaseConfig = {
-  apiKey: "AIzaSyB8YrctE-c3cVjCl8W_HWAXvXuvOkRvDzo",
-  authDomain: "tercio-web-app.firebaseapp.com",
-  projectId: "tercio-web-app",
-  storageBucket: "tercio-web-app.appspot.com",
-  messagingSenderId: "756613251002",
-  appId: "1:756613251002:web:a969485e8277fbb9bba783"
-};
+let app: FirebaseApp | null = null;
+let auth: Auth | null = null;
+let db: Firestore | null = null;
+export let firebaseInitializationError: Error | null = null;
 
-// FIX: Ensure Firebase is only initialized once.
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
+try {
+    const firebaseConfig = {
+      apiKey: import.meta.env.VITE_API_KEY,
+      authDomain: import.meta.env.VITE_AUTH_DOMAIN,
+      projectId: import.meta.env.VITE_PROJECT_ID,
+      storageBucket: import.meta.env.VITE_STORAGE_BUCKET,
+      messagingSenderId: import.meta.env.VITE_MESSAGING_SENDER_ID,
+      appId: import.meta.env.VITE_APP_ID
+    };
+
+    const missingVars = Object.entries(firebaseConfig)
+      .filter(([, value]) => !value)
+      .map(([key]) => `VITE_${key.replace(/([A-Z])/g, '_$1').toUpperCase()}`);
+
+    if (missingVars.length > 0) {
+      throw new Error(`Firebase configuration is missing the following environment variables: ${missingVars.join(', ')}. Please set them in your Netlify project settings.`);
+    }
+
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
+
+} catch (error) {
+    if (error instanceof Error) {
+        firebaseInitializationError = error;
+    } else {
+        firebaseInitializationError = new Error('An unknown error occurred during Firebase initialization.');
+    }
 }
 
-export const auth = firebase.auth();
-export const db = firebase.firestore();
-
-export default firebase.app();
+export { app, auth, db };
