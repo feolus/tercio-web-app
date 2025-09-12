@@ -4,12 +4,12 @@ import 'firebase/compat/auth';
 import 'firebase/compat/firestore';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyB8YrctE-c3cVjCl8W_HWAXvXuvOkRvDzo",
-  authDomain: "tercio-web-app.firebaseapp.com",
-  projectId: "tercio-web-app",
-  storageBucket: "tercio-web-app.appspot.com",
-  messagingSenderId: "756613251002",
-  appId: "1:756613251002:web:a969485e8277fbb9bba783"
+  apiKey: import.meta.env.VITE_API_KEY,
+  authDomain: import.meta.env.VITE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_APP_ID
 };
 
 // FIX: Ensure Firebase is only initialized once.
