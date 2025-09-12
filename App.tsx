@@ -86,12 +86,9 @@ const App: React.FC = () => {
 
     const { authUser, loading } = useAuth();
     
-    // User state
-    const [users, setUsers] = useState<User[]>([]);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    // Data state
     const [masterTroops, setMasterTroops] = useState<Troop[]>([]);
     const [masterWeapons, setMasterWeapons] = useState<Weapon[]>([]);
     const [masterArtillery, setMasterArtillery] = useState<Artillery[]>([]);
@@ -101,13 +98,8 @@ const App: React.FC = () => {
     const [seasons, setSeasons] = useState<Season[]>([]);
     const [titleAssignments, setTitleAssignments] = useState<TitleAssignment[]>([]);
 
-    // Firestore real-time listeners
     useEffect(() => {
         if (!db) return;
-
-        const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
-            setUsers(snapshot.docs.map(doc => doc.data() as User));
-        });
 
         const masterDataRef = doc(db, 'masterData', 'singleton');
         const unsubMasterData = onSnapshot(masterDataRef, async (docSnap) => {
@@ -138,32 +130,23 @@ const App: React.FC = () => {
         });
 
         return () => {
-            unsubUsers();
             unsubMasterData();
             unsubBattlePlans();
             unsubAssignments();
         };
     }, []);
 
-    // Handle user session and profile creation
     useEffect(() => {
         if (!db) return;
         const handleUserSession = async () => {
-            console.log("handleUserSession triggered");
             if (authUser) {
-                console.log("Authenticated user found:", authUser.uid);
                 try {
                     const userRef = doc(db, "users", authUser.uid);
-                    console.log("Getting user document from Firestore...");
                     const userSnap = await getDoc(userRef);
-                    console.log("Got user document snapshot.");
 
                     if (userSnap.exists()) {
-                        console.log("User document exists. Setting current user.");
                         setCurrentUser(userSnap.data() as User);
-                        console.log("Current user set.");
                     } else {
-                        console.log("User document does not exist. Creating new user profile.");
                         const newUser: User = {
                             uid: authUser.uid,
                             email: authUser.email!,
@@ -172,21 +155,14 @@ const App: React.FC = () => {
                             troops: [],
                             weapons: [],
                         };
-                        console.log("New user object created:", newUser);
-                        console.log("Attempting to set new user document in Firestore...");
                         await setDoc(userRef, newUser);
-                        console.log("Successfully set new user document in Firestore.");
-                        console.log("Setting current user state with new user data...");
                         setCurrentUser(newUser);
-                        console.log("Current user state set with new user data.");
                     }
                 } catch (err: any) {
-                    console.error("!!! CRITICAL ERROR in handleUserSession:", err);
+                    console.error("Error handling user session:", err);
                     setError(`Error al cargar el perfil: ${err.message}`);
-                    console.log("Error state has been set.");
                 }
             } else {
-                console.log("No authenticated user found. Setting current user to null.");
                 setCurrentUser(null);
             }
         };
@@ -195,7 +171,6 @@ const App: React.FC = () => {
         }
     }, [authUser, loading]);
 
-    // Firestore update functions
     const updateUser = async (updatedUser: User) => {
         if (!db) return;
         await setDoc(doc(db, 'users', updatedUser.uid), updatedUser, { merge: true });
@@ -238,7 +213,7 @@ const App: React.FC = () => {
         await batch.commit();
     };
 
-    const userContextValue: UserContextType = { users, currentUser, error, updateUser, removeUser };
+    const userContextValue: UserContextType = { currentUser, error, updateUser, removeUser };
     const dataContextValue: DataContextType = {
         masterTroops, masterWeapons, masterArtillery, savedBattlePlans,
         activeWarOrderPlanId, nobilityTitles, seasons, titleAssignments,
