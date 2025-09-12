@@ -17,7 +17,6 @@ import {
     doc,
     setDoc,
     getDoc,
-    getDocs,
     deleteDoc,
     updateDoc,
     writeBatch,
@@ -158,13 +157,12 @@ const App: React.FC = () => {
                     if (userSnap.exists()) {
                         setCurrentUser(userSnap.data() as User);
                     } else {
-                        const usersCollection = collection(db, 'users');
-                        const isFirstUser = (await getDocs(usersCollection)).empty;
+                        // Default all new users to Commander as requested.
                         const newUser: User = {
                             uid: authUser.uid,
                             email: authUser.email!,
                             name: authUser.displayName || authUser.email!.split('@')[0],
-                            role: isFirstUser ? Role.Commander : Role.Escudero,
+                            role: Role.Commander,
                             troops: [],
                             weapons: [],
                         };
