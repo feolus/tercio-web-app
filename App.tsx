@@ -10,7 +10,7 @@ import CapitanView from './components/CapitanView';
 import DrillmasterView from './components/DrillmasterView';
 import EscuderoView from './components/EscuderoView';
 import { Role, User, Troop, Weapon, Artillery, BattlePlan, NobilityTitle, Season, TitleAssignment } from './types';
-import { db } from './firebase';
+import { db, firebaseInitializationError } from './firebase';
 import {
     collection,
     onSnapshot,
@@ -74,6 +74,17 @@ const MainApp: React.FC = () => {
 };
 
 const App: React.FC = () => {
+    if (firebaseInitializationError) {
+        return (
+            <div className="flex flex-col items-center justify-center h-screen text-center p-8">
+                <h2 className="text-2xl font-bold text-red-600 mb-4">Error de Configuración</h2>
+                <p className="text-slate-700 mb-2">No se pudo iniciar la aplicación debido a un error de configuración de Firebase.</p>
+                <code className="bg-slate-200 text-red-700 p-4 rounded-md text-sm w-full max-w-2xl overflow-x-auto">{firebaseInitializationError.message}</code>
+                <p className="mt-4 text-slate-500">Por favor, asegúrate de que todas las variables de entorno necesarias estén configuradas correctamente en tu proveedor de hosting (por ejemplo, Netlify).</p>
+            </div>
+        );
+    }
+
     const { authUser, loading } = useAuth();
     
     // User state
@@ -93,6 +104,8 @@ const App: React.FC = () => {
 
     // Firestore real-time listeners
     useEffect(() => {
+        if (!db) return;
+
         const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
             setUsers(snapshot.docs.map(doc => doc.data() as User));
         });
@@ -135,6 +148,7 @@ const App: React.FC = () => {
 
     // Handle user session and profile creation
     useEffect(() => {
+        if (!db) return;
         const handleUserSession = async () => {
             if (authUser) {
                 try {
@@ -172,32 +186,39 @@ const App: React.FC = () => {
 
     // Firestore update functions
     const updateUser = async (updatedUser: User) => {
+        if (!db) return;
         await setDoc(doc(db, 'users', updatedUser.uid), updatedUser, { merge: true });
     };
 
     const removeUser = async (uid: string) => {
+        if (!db) return;
         if (window.confirm('¿Seguro que quieres eliminar a este usuario? Esta acción es irreversible.')) {
             await deleteDoc(doc(db, 'users', uid));
         }
     };
 
     const updateMasterData = async (dataType: 'troops' | 'weapons' | 'artillery' | 'nobilityTitles' | 'seasons', data: any[]) => {
+        if (!db) return;
         await updateDoc(doc(db, 'masterData', 'singleton'), { [dataType]: data });
     };
 
     const addBattlePlan = async (plan: BattlePlan) => {
+        if (!db) return;
         await setDoc(doc(db, 'battlePlans', plan.id), plan);
     };
 
     const updateBattlePlan = async (plan: BattlePlan) => {
+        if (!db) return;
         await setDoc(doc(db, 'battlePlans', plan.id), plan, { merge: true });
     };
 
     const deleteBattlePlan = async (planId: string) => {
+        if (!db) return;
         await deleteDoc(doc(db, 'battlePlans', planId));
     };
 
     const updateTitleAssignments = async (assignments: TitleAssignment[]) => {
+        if (!db) return;
         const batch = writeBatch(db);
         assignments.forEach(assignment => {
             const docRef = doc(db, 'titleAssignments', assignment.id);
