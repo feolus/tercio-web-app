@@ -22,7 +22,7 @@ try {
       .map(([key]) => `VITE_${key.replace(/([A-Z])/g, '_$1').toUpperCase()}`);
 
     if (missingVars.length > 0) {
-      throw new Error(`Firebase configuration is missing the following environment variables: ${missingVars.join(', ')}. Please set them in your Netlify project settings.`);
+      throw new Error(`Falta la configuración de Firebase. Por favor, establece las siguientes variables de entorno en la configuración de tu proyecto de Netlify: ${missingVars.join(', ')}`);
     }
 
     app = initializeApp(firebaseConfig);
@@ -30,10 +30,11 @@ try {
     db = getFirestore(app);
 
 } catch (error) {
+    console.error("Error de inicialización de Firebase:", error);
     if (error instanceof Error) {
         firebaseInitializationError = error;
     } else {
-        firebaseInitializationError = new Error('An unknown error occurred during Firebase initialization.');
+        firebaseInitializationError = new Error('Ocurrió un error desconocido durante la inicialización de Firebase.');
     }
 }
 
