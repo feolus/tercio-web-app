@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { firebaseInitializationError } from '../firebase';
 
 const LoginView: React.FC = () => {
     const [email, setEmail] = useState('');
@@ -51,6 +52,12 @@ const LoginView: React.FC = () => {
     return (
         <div className="min-h-screen bg-slate-100 text-slate-800 flex flex-col items-center justify-center p-4">
             <div className="w-full max-w-md">
+                {firebaseInitializationError && (
+                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                        <strong className="font-bold">Error de configuración: </strong>
+                        <span className="block sm:inline">{firebaseInitializationError.message}</span>
+                    </div>
+                )}
                  <img src="https://picsum.photos/seed/conqueror/150/150" alt="Logo" className="mx-auto mb-6 rounded-full border-4 border-slate-300 shadow-lg"/>
                 <h1 className="text-4xl font-bold mb-2 text-amber-600 tracking-wider text-center">Tercio de Guarnicion</h1>
                 <p className="text-slate-500 mb-8 text-center">{isRegistering ? 'Crea una cuenta para unirte' : 'Inicia sesión para continuar'}</p>
