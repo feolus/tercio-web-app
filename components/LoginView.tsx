@@ -18,7 +18,11 @@ const LoginView: React.FC = () => {
                 await login(email, password);
             }
         } catch (err: any) {
-            setError(getFirebaseErrorMessage(err.code));
+            let message = getFirebaseErrorMessage(err.code);
+            if (message === 'Ha ocurrido un error. Por favor, inténtalo de nuevo.' && err.message) {
+                message = err.message;
+            }
+            setError(message);
         }
     };
 
@@ -27,7 +31,11 @@ const LoginView: React.FC = () => {
         try {
             await loginWithGoogle();
         } catch (err: any) {
-             setError(getFirebaseErrorMessage(err.code));
+            let message = getFirebaseErrorMessage(err.code);
+            if (message === 'Ha ocurrido un error. Por favor, inténtalo de nuevo.' && err.message) {
+                message = err.message;
+            }
+            setError(message);
         }
     };
 

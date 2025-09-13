@@ -1,14 +1,18 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import {
+    Auth,
+    User,
+    onAuthStateChanged,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    signOut,
+    GoogleAuthProvider,
+    signInWithPopup,
+} from 'firebase/auth';
 import { auth } from '../firebase';
-// FIX: Using Firebase v9 compatibility syntax to fix import errors.
-import firebase from 'firebase/compat/app';
-import 'firebase/compat/auth';
-
-// FIX: Define FirebaseUser type using v9 compat syntax.
-type FirebaseUser = firebase.User;
 
 interface AuthContextType {
-    authUser: FirebaseUser | null;
+    authUser: User | null;
     loading: boolean;
     signup: (email: string, password: string) => Promise<any>;
     login: (email: string, password: string) => Promise<any>;
@@ -32,12 +36,15 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-    const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
+    const [authUser, setAuthUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // FIX: Use v8 onAuthStateChanged method
-        const unsubscribe = auth.onAuthStateChanged((user) => {
+        if (!auth) {
+            setLoading(false);
+            return;
+        }
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
             setAuthUser(user);
             setLoading(false);
         });
@@ -45,24 +52,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }, []);
 
     const signup = (email: string, password: string) => {
-        // FIX: Use v8 createUserWithEmailAndPassword method
-        return auth.createUserWithEmailAndPassword(email, password);
+        if (!auth) throw new Error("Auth service not available");
+        return createUserWithEmailAndPassword(auth, email, password);
     };
 
     const login = (email: string, password: string) => {
-        // FIX: Use v8 signInWithEmailAndPassword method
-        return auth.signInWithEmailAndPassword(email, password);
+        if (!auth) throw new Error("Auth service not available");
+        return signInWithEmailAndPassword(auth, email, password);
     };
 
     const logout = () => {
-        // FIX: Use v8 signOut method
-        return auth.signOut();
+        if (!auth) throw new Error("Auth service not available");
+        return signOut(auth);
     };
     
     const loginWithGoogle = () => {
-        // FIX: Use v8 GoogleAuthProvider and signInWithPopup method
-        const provider = new firebase.auth.GoogleAuthProvider();
-        return auth.signInWithPopup(provider);
+        if (!auth) throw new Error("Auth service not available");
+        const provider = new GoogleAuthProvider();
+        return signInWithPopup(auth, provider);
     };
 
     const value = {
