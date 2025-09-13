@@ -99,7 +99,16 @@ const App: React.FC = () => {
     const [titleAssignments, setTitleAssignments] = useState<TitleAssignment[]>([]);
 
     useEffect(() => {
-        if (!db) return;
+        if (!db || !authUser) {
+            setMasterTroops([]);
+            setMasterWeapons([]);
+            setMasterArtillery([]);
+            setSavedBattlePlans([]);
+            setNobilityTitles([]);
+            setSeasons([]);
+            setTitleAssignments([]);
+            return;
+        }
 
         const masterDataRef = doc(db, 'masterData', 'singleton');
         const unsubMasterData = onSnapshot(masterDataRef, async (docSnap) => {
@@ -134,7 +143,7 @@ const App: React.FC = () => {
             unsubBattlePlans();
             unsubAssignments();
         };
-    }, []);
+    }, [authUser]);
 
     useEffect(() => {
         if (!db) return;
