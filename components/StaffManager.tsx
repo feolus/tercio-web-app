@@ -230,7 +230,6 @@ const StaffManager: React.FC = () => {
                         </div>
                     );
                 })}
-                        })}
                     </div>
                     <PaginationControls />
                 </>
