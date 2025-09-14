@@ -87,9 +87,7 @@ const App: React.FC = () => {
     const { authUser, loading } = useAuth();
     
     const [currentUser, setCurrentUser] = useState<User | null>(null);
-    const [allUsers, setAllUsers] = useState<User[]>([]);
     const [error, setError] = useState<string | null>(null);
-    const [userFetchError, setUserFetchError] = useState<string | null>(null);
 
     const [masterTroops, setMasterTroops] = useState<Troop[]>([]);
     const [masterWeapons, setMasterWeapons] = useState<Weapon[]>([]);
@@ -140,24 +138,10 @@ const App: React.FC = () => {
             setTitleAssignments(snapshot.docs.map(doc => doc.data() as TitleAssignment));
         });
 
-        const unsubUsers = onSnapshot(collection(db, 'users'),
-            (snapshot) => {
-                setAllUsers(snapshot.docs.map(doc => doc.data() as User));
-                setUserFetchError(null); // Clear error on success
-            },
-            (err) => {
-                console.error("Error fetching users collection:", err);
-                const errorMessage = "No tienes permiso para ver la lista de todos los miembros. Algunas funciones pueden estar deshabilitadas.";
-                setUserFetchError(errorMessage);
-                setAllUsers([]); // Clear user list on error
-            }
-        );
-
         return () => {
             unsubMasterData();
             unsubBattlePlans();
             unsubAssignments();
-            unsubUsers();
         };
     }, [authUser]);
 
@@ -253,7 +237,7 @@ const App: React.FC = () => {
         await batch.commit();
     };
 
-    const userContextValue: UserContextType = { currentUser, users: allUsers, error, userFetchError, updateUser, removeUser };
+    const userContextValue: UserContextType = { currentUser, error, updateUser, removeUser };
     const dataContextValue: DataContextType = {
         masterTroops, masterWeapons, masterArtillery, savedBattlePlans,
         activeWarOrderPlanId, nobilityTitles, seasons, titleAssignments,

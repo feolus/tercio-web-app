@@ -2,6 +2,8 @@ import React, { useState, useContext, useMemo, useEffect } from 'react';
 import { UserContext } from '../context/UserContext';
 import { User, Role } from '../types';
 import Card from './common/Card';
+import { db } from '../firebase';
+import { collection, onSnapshot } from 'firebase/firestore';
 
 const ROLE_HIERARCHY: Record<Role, number> = {
     [Role.Commander]: 5,
@@ -13,16 +15,11 @@ const ROLE_HIERARCHY: Record<Role, number> = {
 };
 
 const StaffManager: React.FC = () => {
-    const { users, updateUser, removeUser, currentUser, userFetchError } = useContext(UserContext);
+    const { updateUser, removeUser, currentUser } = useContext(UserContext);
 
-    if (userFetchError) {
-        return (
-            <div className="p-4 text-center bg-red-100 border border-red-400 text-red-700 rounded-lg">
-                <h3 className="font-bold">Error de Permisos</h3>
-                <p>{userFetchError}</p>
-            </div>
-        );
-    }
+    const [users, setUsers] = useState<User[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     const [isFormVisible, setIsFormVisible] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -34,6 +31,29 @@ const StaffManager: React.FC = () => {
     
     const [currentPage, setCurrentPage] = useState(1);
     const USERS_PER_PAGE = 15;
+
+    useEffect(() => {
+        if (!db) {
+            setError("La conexión con la base de datos no está disponible.");
+            setLoading(false);
+            return;
+        }
+
+        const unsub = onSnapshot(collection(db, 'users'),
+            (snapshot) => {
+                setUsers(snapshot.docs.map(doc => doc.data() as User));
+                setLoading(false);
+                setError(null);
+            },
+            (err) => {
+                console.error("Error fetching users for StaffManager:", err);
+                setError("No tienes permiso para ver la lista de miembros.");
+                setLoading(false);
+            }
+        );
+
+        return () => unsub();
+    }, []);
 
     const sortedUsers = useMemo(() => 
         [...users].sort((a, b) => a.name.localeCompare(b.name)),
@@ -150,8 +170,19 @@ const StaffManager: React.FC = () => {
 
             {isFormVisible && <Form />}
 
-            <div className="mt-4 space-y-2 max-h-[60vh] overflow-y-auto pr-2">
-                {paginatedUsers.map(user => {
+            {loading && <p className="mt-4 text-center">Cargando miembros...</p>}
+
+            {error && (
+                 <div className="mt-4 p-4 text-center bg-red-100 border border-red-400 text-red-700 rounded-lg">
+                    <h3 className="font-bold">Error de Permisos</h3>
+                    <p>{error}</p>
+                </div>
+            )}
+
+            {!loading && !error && (
+                <>
+                    <div className="mt-4 space-y-2 max-h-[60vh] overflow-y-auto pr-2">
+                        {paginatedUsers.map(user => {
                     const isCurrentUser = currentUser?.uid === user.uid;
                     let canEdit = false;
                     let canDelete = false;
@@ -199,9 +230,11 @@ const StaffManager: React.FC = () => {
                         </div>
                     );
                 })}
-            </div>
-            
-            <PaginationControls />
+                        })}
+                    </div>
+                    <PaginationControls />
+                </>
+            )}
         </div>
     );
 };
