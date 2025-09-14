@@ -160,9 +160,9 @@ const BattlePlanner: React.FC = () => {
         };
 
         addBattlePlan(newPlan).then(() => {
-            alert('¡Plan de batalla creado!');
             setActivePlan(newPlan);
             setPlanName('');
+            setPlanDate(new Date().toISOString().split('T')[0]); // Reset date as well
         });
     };
 
