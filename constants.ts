@@ -1,4 +1,9 @@
-import { Troop, Weapon, Role, BattleTask, Artillery, NobilityTitle } from './types';
+import { Troop, Weapon, Role, Artillery, NobilityTitle } from './types';
+
+export const BATTLE_TASK_OPTIONS = [
+    "Puerta", "Brecha", "Muralla 1", "Muralla 2", "Muralla 3",
+    "Popeo", "Pueblo 1", "Pueblo 2", "Reserva", "Otro"
+];
 
 export const INITIAL_TROOPS: Troop[] = [
     // Tier 5
@@ -116,5 +121,3 @@ export const INITIAL_NOBILITY_TITLES: NobilityTitle[] = [
     { id: 'title_4', name: 'Defensor Leal' },
     { id: 'title_5', name: 'Conquistador Audaz' },
 ];
-
-export const BATTLE_TASKS = Object.values(BattleTask);
