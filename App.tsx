@@ -139,9 +139,16 @@ const App: React.FC = () => {
             setTitleAssignments(snapshot.docs.map(doc => doc.data() as TitleAssignment));
         });
 
-        const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
-            setAllUsers(snapshot.docs.map(doc => doc.data() as User));
-        });
+        const unsubUsers = onSnapshot(collection(db, 'users'),
+            (snapshot) => {
+                setAllUsers(snapshot.docs.map(doc => doc.data() as User));
+            },
+            (err) => {
+                console.error("Error fetching users collection:", err);
+                setError("No tienes permiso para ver la lista de todos los miembros. Por favor, contacta al administrador para revisar las reglas de seguridad de Firestore.");
+                setAllUsers([]); // Clear user list on error
+            }
+        );
 
         return () => {
             unsubMasterData();
