@@ -187,8 +187,23 @@ const App: React.FC = () => {
     }, [authUser, loading]);
 
     const updateUser = async (updatedUser: User) => {
-        if (!db) return;
-        await setDoc(doc(db, 'users', updatedUser.uid), updatedUser, { merge: true });
+        if (!db || !currentUser) return;
+
+        // Create a deep copy to ensure no reference issues.
+        const newCurrentUser = JSON.parse(JSON.stringify(updatedUser));
+
+        // First, update the local state for immediate UI feedback
+        setCurrentUser(newCurrentUser);
+
+        try {
+            // Then, persist the changes to Firestore
+            const userRef = doc(db, 'users', newCurrentUser.uid);
+            await setDoc(userRef, newCurrentUser, { merge: true });
+        } catch (error) {
+            console.error("Error updating user:", error);
+            // Revert state on error
+            setCurrentUser(currentUser);
+        }
     };
 
     const removeUser = async (uid: string) => {

@@ -40,6 +40,30 @@ const AvailableKnightsPanel: React.FC<{
     );
 };
 
+const AvailableArtilleryPanel: React.FC<{
+    artillery: Artillery[];
+    onDragStart: (e: React.DragEvent<HTMLDivElement>, piece: Artillery) => void;
+}> = ({ artillery, onDragStart }) => {
+    return (
+         <Card className="w-full flex flex-col bg-slate-50 h-[30vh] lg:h-auto">
+            <h3 className="text-lg font-bold text-slate-700 mb-4 pb-2 border-b-2">Artillería Disponible</h3>
+            <div className="overflow-y-auto flex-grow pr-2 space-y-2">
+                {artillery.map(piece => (
+                    <div
+                        key={piece.id}
+                        draggable
+                        onDragStart={(e) => onDragStart(e, piece)}
+                        className="p-3 bg-white border border-slate-200 rounded-lg cursor-grab active:cursor-grabbing hover:bg-sky-50 hover:border-sky-300 transition-all shadow-sm flex items-center gap-3"
+                    >
+                        <img src={piece.imageUrl} alt={piece.name} className="w-10 h-10 rounded-md object-cover" />
+                        <p className="font-semibold text-slate-800 text-sm">{piece.name}</p>
+                    </div>
+                ))}
+            </div>
+        </Card>
+    )
+};
+
 const BattleGroupCard: React.FC<{
     group: BattleGroup;
     users: User[];
@@ -50,8 +74,8 @@ const BattleGroupCard: React.FC<{
     onRemoveGroup: (groupId: string) => void;
     canBeRemoved: boolean;
     onTaskChange: (groupId: string, newTask: string) => void;
-    onArtilleryChange: (groupId: string, newArtilleryIds: string[]) => void;
-}> = ({ group, users, masterArtillery, onDragOver, onDrop, onRemoveKnight, onRemoveGroup, canBeRemoved, onTaskChange, onArtilleryChange }) => {
+    onRemoveArtillery: (artilleryId: string, groupId: string) => void;
+}> = ({ group, users, masterArtillery, onDragOver, onDrop, onRemoveKnight, onRemoveGroup, canBeRemoved, onTaskChange, onRemoveArtillery }) => {
     const [isDragOver, setIsDragOver] = useState(false);
     
     const groupKnights = useMemo(() => 
@@ -93,7 +117,7 @@ const BattleGroupCard: React.FC<{
             </div>
             
             <div className="space-y-2 min-h-[50px] flex-grow">
-                {groupKnights.length === 0 && (!group.artilleryIds || group.artilleryIds.length === 0) && <p className="text-sm text-slate-400 text-center pt-2">Arrastra miembros aquí</p>}
+                {groupKnights.length === 0 && groupArtillery.length === 0 && <p className="text-sm text-slate-400 text-center pt-2">Arrastra miembros o artillería aquí</p>}
 
                 {groupKnights.map(knight => (
                     <div key={knight.uid} className="bg-slate-100 p-2 rounded-md flex justify-between items-center">
@@ -107,22 +131,20 @@ const BattleGroupCard: React.FC<{
                 ))}
             </div>
             
-            <div className="mt-4 pt-3 border-t border-slate-200">
-                <label className="block text-sm font-medium text-slate-600 mb-1">Artillería Asignada</label>
-                <select
-                    multiple
-                    value={group.artilleryIds || []}
-                    onChange={(e) => {
-                        const selectedIds = Array.from(e.target.selectedOptions, option => option.value);
-                        onArtilleryChange(group.id, selectedIds);
-                    }}
-                    className="w-full bg-white border border-slate-300 rounded-md p-2 h-24 text-sm"
-                >
-                    {masterArtillery.map(art => (
-                        <option key={art.id} value={art.id}>{art.name}</option>
-                    ))}
-                </select>
-            </div>
+            {(groupArtillery.length > 0) && (
+                 <div className="mt-3 pt-3 border-t border-slate-200 space-y-1">
+                     {groupArtillery.map(piece => (
+                         <div key={piece.id} className="bg-sky-100 p-1.5 rounded-md flex justify-between items-center">
+                            <span className="text-xs font-medium text-sky-800">{piece.name}</span>
+                            <button
+                                onClick={() => onRemoveArtillery(piece.id, group.id)}
+                                className="text-red-500 hover:text-red-700 text-base font-bold leading-none"
+                                title="Eliminar artillería"
+                            >&times;</button>
+                        </div>
+                     ))}
+                </div>
+            )}
         </Card>
     );
 };
@@ -173,6 +195,10 @@ const BattlePlanner: React.FC = () => {
         e.dataTransfer.setData("userId", user.uid);
     };
 
+    const handleArtilleryDragStart = (e: React.DragEvent<HTMLDivElement>, piece: Artillery) => {
+        e.dataTransfer.setData("artilleryId", piece.id);
+    };
+
     const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
     };
@@ -182,6 +208,7 @@ const BattlePlanner: React.FC = () => {
         if (activePlan?.status === 'completed') return;
 
         const userId = e.dataTransfer.getData("userId");
+        const artilleryId = e.dataTransfer.getData("artilleryId");
         
         if (userId) {
             const userToAssign = users.find(u => u.uid === userId);
@@ -190,6 +217,21 @@ const BattlePlanner: React.FC = () => {
                 setTargetGroup(group);
                 setIsModalOpen(true);
             }
+        } else if (artilleryId) {
+            if (!activePlan) return;
+            const updatedPlan = {
+                ...activePlan,
+                groups: activePlan.groups.map(g => {
+                    if (g.id === group.id) {
+                        const currentArtillery = g.artilleryIds || [];
+                        if (currentArtillery.includes(artilleryId)) return g;
+                        return { ...g, artilleryIds: [...currentArtillery, artilleryId] };
+                    }
+                    return g;
+                })
+            };
+            updateBattlePlan(updatedPlan);
+            setActivePlan(updatedPlan);
         }
     };
     
@@ -224,6 +266,22 @@ const BattlePlanner: React.FC = () => {
                 return g;
             }),
             selectedKnights: activePlan.selectedKnights.filter(id => id !== userId),
+        };
+        updateBattlePlan(updatedPlan);
+        setActivePlan(updatedPlan);
+    };
+
+    const handleRemoveArtillery = (artilleryId: string, groupId: string) => {
+        if (!activePlan || activePlan.status === 'completed') return;
+
+        const updatedPlan: BattlePlan = {
+            ...activePlan,
+            groups: activePlan.groups.map(g => {
+                if (g.id === groupId) {
+                    return { ...g, artilleryIds: (g.artilleryIds || []).filter(id => id !== artilleryId) };
+                }
+                return g;
+            }),
         };
         updateBattlePlan(updatedPlan);
         setActivePlan(updatedPlan);
@@ -271,19 +329,6 @@ const BattlePlanner: React.FC = () => {
             ...activePlan,
             groups: activePlan.groups.map(g =>
                 g.id === groupId ? { ...g, task: newTask } : g
-            ),
-        };
-        updateBattlePlan(updatedPlan);
-        setActivePlan(updatedPlan);
-    };
-
-    const handleArtilleryChange = (groupId: string, newArtilleryIds: string[]) => {
-        if (!activePlan) return;
-
-        const updatedPlan = {
-            ...activePlan,
-            groups: activePlan.groups.map(g =>
-                g.id === groupId ? { ...g, artilleryIds: newArtilleryIds } : g
             ),
         };
         updateBattlePlan(updatedPlan);
@@ -473,6 +518,7 @@ const BattlePlanner: React.FC = () => {
             <div className="flex flex-col lg:flex-row gap-6">
                 <div className="w-full lg:w-1/4 flex flex-col gap-4">
                     <AvailableKnightsPanel users={users} assignedKnightIds={assignedKnightIds} onDragStart={handleKnightDragStart} />
+                    <AvailableArtilleryPanel artillery={masterArtillery} onDragStart={handleArtilleryDragStart} />
                 </div>
 
                 <div className="w-full lg:w-3/4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -488,7 +534,7 @@ const BattlePlanner: React.FC = () => {
                             onRemoveGroup={handleRemoveGroup}
                             canBeRemoved={activePlan.groups.length > 1}
                             onTaskChange={handleTaskChange}
-                            onArtilleryChange={handleArtilleryChange}
+                            onRemoveArtillery={handleRemoveArtillery}
                         />
                     ))}
                 </div>
