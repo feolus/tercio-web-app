@@ -7,39 +7,6 @@ import { BattlePlan, User, BattleGroup, BattleKnight, Artillery, Troop, Weapon }
 import { BATTLE_TASK_OPTIONS } from '../constants';
 import AssignmentModal from './AssignmentModal';
 
-const AvailableKnightsPanel: React.FC<{
-    users: User[];
-    assignedKnightIds: Set<string>;
-    onDragStart: (e: React.DragEvent<HTMLDivElement>, user: User) => void;
-}> = ({ users, assignedKnightIds, onDragStart }) => {
-    
-    const availableKnights = useMemo(() => 
-        users.filter(u => !assignedKnightIds.has(u.uid))
-             .sort((a, b) => a.name.localeCompare(b.name)),
-    [users, assignedKnightIds]);
-
-    return (
-        <Card className="w-full flex flex-col bg-slate-50 h-[30vh] lg:h-auto">
-            <h3 className="text-lg font-bold text-slate-700 mb-4 pb-2 border-b-2">Miembros Disponibles</h3>
-            <div className="overflow-y-auto flex-grow pr-2 space-y-2">
-                {availableKnights.length > 0 ? availableKnights.map(user => (
-                    <div
-                        key={user.uid}
-                        draggable
-                        onDragStart={(e) => onDragStart(e, user)}
-                        className="p-3 bg-white border border-slate-200 rounded-lg cursor-grab active:cursor-grabbing hover:bg-amber-50 hover:border-amber-300 transition-all shadow-sm"
-                    >
-                        <p className="font-semibold text-slate-800">{user.name}</p>
-                        <p className="text-xs text-slate-500">{user.role}</p>
-                    </div>
-                )) : (
-                    <p className="text-center text-slate-500 pt-10">Todos los miembros han sido asignados.</p>
-                )}
-            </div>
-        </Card>
-    );
-};
-
 const AvailableArtilleryPanel: React.FC<{
     artillery: Artillery[];
     onDragStart: (e: React.DragEvent<HTMLDivElement>, piece: Artillery) => void;
@@ -488,6 +455,11 @@ const BattlePlanner: React.FC = () => {
 
     const assignedKnightIds = new Set(activePlan.selectedKnights);
 
+    const availableKnights = useMemo(() =>
+        users.filter(u => !assignedKnightIds.has(u.uid))
+             .sort((a, b) => a.name.localeCompare(b.name)),
+    [users, assignedKnightIds]);
+
     return (
         <div>
             <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
@@ -517,7 +489,24 @@ const BattlePlanner: React.FC = () => {
             
             <div className="flex flex-col lg:flex-row gap-6">
                 <div className="w-full lg:w-1/4 flex flex-col gap-4">
-                    <AvailableKnightsPanel users={users} assignedKnightIds={assignedKnightIds} onDragStart={handleKnightDragStart} />
+                    <Card className="w-full flex flex-col bg-slate-50 h-[30vh] lg:h-auto">
+                        <h3 className="text-lg font-bold text-slate-700 mb-4 pb-2 border-b-2">Miembros Disponibles</h3>
+                        <div className="overflow-y-auto flex-grow pr-2 space-y-2">
+                            {availableKnights.length > 0 ? availableKnights.map(user => (
+                                <div
+                                    key={user.uid}
+                                    draggable
+                                    onDragStart={(e) => handleKnightDragStart(e, user)}
+                                    className="p-3 bg-white border border-slate-200 rounded-lg cursor-grab active:cursor-grabbing hover:bg-amber-50 hover:border-amber-300 transition-all shadow-sm"
+                                >
+                                    <p className="font-semibold text-slate-800">{user.name}</p>
+                                    <p className="text-xs text-slate-500">{user.role}</p>
+                                </div>
+                            )) : (
+                                <p className="text-center text-slate-500 pt-10">Todos los miembros han sido asignados.</p>
+                            )}
+                        </div>
+                    </Card>
                     <AvailableArtilleryPanel artillery={masterArtillery} onDragStart={handleArtilleryDragStart} />
                 </div>
 
