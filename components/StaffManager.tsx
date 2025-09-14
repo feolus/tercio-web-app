@@ -13,7 +13,17 @@ const ROLE_HIERARCHY: Record<Role, number> = {
 };
 
 const StaffManager: React.FC = () => {
-    const { users, updateUser, removeUser, currentUser } = useContext(UserContext);
+    const { users, updateUser, removeUser, currentUser, userFetchError } = useContext(UserContext);
+
+    if (userFetchError) {
+        return (
+            <div className="p-4 text-center bg-red-100 border border-red-400 text-red-700 rounded-lg">
+                <h3 className="font-bold">Error de Permisos</h3>
+                <p>{userFetchError}</p>
+            </div>
+        );
+    }
+
     const [isFormVisible, setIsFormVisible] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [formData, setFormData] = useState({

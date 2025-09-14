@@ -89,6 +89,7 @@ const App: React.FC = () => {
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [allUsers, setAllUsers] = useState<User[]>([]);
     const [error, setError] = useState<string | null>(null);
+    const [userFetchError, setUserFetchError] = useState<string | null>(null);
 
     const [masterTroops, setMasterTroops] = useState<Troop[]>([]);
     const [masterWeapons, setMasterWeapons] = useState<Weapon[]>([]);
@@ -142,10 +143,12 @@ const App: React.FC = () => {
         const unsubUsers = onSnapshot(collection(db, 'users'),
             (snapshot) => {
                 setAllUsers(snapshot.docs.map(doc => doc.data() as User));
+                setUserFetchError(null); // Clear error on success
             },
             (err) => {
                 console.error("Error fetching users collection:", err);
-                setError("No tienes permiso para ver la lista de todos los miembros. Por favor, contacta al administrador para revisar las reglas de seguridad de Firestore.");
+                const errorMessage = "No tienes permiso para ver la lista de todos los miembros. Algunas funciones pueden estar deshabilitadas.";
+                setUserFetchError(errorMessage);
                 setAllUsers([]); // Clear user list on error
             }
         );
@@ -250,7 +253,7 @@ const App: React.FC = () => {
         await batch.commit();
     };
 
-    const userContextValue: UserContextType = { currentUser, users: allUsers, error, updateUser, removeUser };
+    const userContextValue: UserContextType = { currentUser, users: allUsers, error, userFetchError, updateUser, removeUser };
     const dataContextValue: DataContextType = {
         masterTroops, masterWeapons, masterArtillery, savedBattlePlans,
         activeWarOrderPlanId, nobilityTitles, seasons, titleAssignments,

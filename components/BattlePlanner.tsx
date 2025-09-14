@@ -119,7 +119,19 @@ const BattleGroupCard: React.FC<{
 
 const BattlePlanner: React.FC = () => {
     const { addBattlePlan, savedBattlePlans, updateBattlePlan, masterArtillery, masterTroops, masterWeapons } = useContext(DataContext);
-    const { users } = useContext(UserContext);
+    const { users, userFetchError } = useContext(UserContext);
+
+    if (userFetchError) {
+        return (
+            <Card>
+                <SectionHeader title="Plan de Batalla" />
+                <div className="p-4 text-center bg-red-100 border border-red-400 text-red-700 rounded-lg">
+                    <h3 className="font-bold">Error de Permisos</h3>
+                    <p>{userFetchError}</p>
+                </div>
+            </Card>
+        );
+    }
     
     const [planName, setPlanName] = useState('');
     const [planDate, setPlanDate] = useState(new Date().toISOString().split('T')[0]);
