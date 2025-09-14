@@ -1,14 +1,17 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { auth } from '../firebase';
-// FIX: Using Firebase v9 compatibility syntax to fix import errors.
-import firebase from 'firebase/compat/app';
-import 'firebase/compat/auth';
-
-// FIX: Define FirebaseUser type using v9 compat syntax.
-type FirebaseUser = firebase.User;
+import {
+    User,
+    onAuthStateChanged,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    signOut,
+    GoogleAuthProvider,
+    signInWithPopup
+} from 'firebase/auth';
 
 interface AuthContextType {
-    authUser: FirebaseUser | null;
+    authUser: User | null;
     loading: boolean;
     signup: (email: string, password: string) => Promise<any>;
     login: (email: string, password: string) => Promise<any>;
@@ -32,7 +35,7 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-    const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
+    const [authUser, setAuthUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -40,8 +43,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setLoading(false);
             return;
         }
-        // FIX: Use v8 onAuthStateChanged method
-        const unsubscribe = auth.onAuthStateChanged((user) => {
+
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
             setAuthUser(user);
             setLoading(false);
         });
@@ -50,27 +53,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const signup = (email: string, password: string) => {
         if (!auth) return Promise.reject(new Error('Firebase not initialized.'));
-        // FIX: Use v8 createUserWithEmailAndPassword method
-        return auth.createUserWithEmailAndPassword(email, password);
+        return createUserWithEmailAndPassword(auth, email, password);
     };
 
     const login = (email: string, password: string) => {
         if (!auth) return Promise.reject(new Error('Firebase not initialized.'));
-        // FIX: Use v8 signInWithEmailAndPassword method
-        return auth.signInWithEmailAndPassword(email, password);
+        return signInWithEmailAndPassword(auth, email, password);
     };
 
     const logout = () => {
         if (!auth) return Promise.reject(new Error('Firebase not initialized.'));
-        // FIX: Use v8 signOut method
-        return auth.signOut();
+        return signOut(auth);
     };
     
     const loginWithGoogle = () => {
         if (!auth) return Promise.reject(new Error('Firebase not initialized.'));
-        // FIX: Use v8 GoogleAuthProvider and signInWithPopup method
-        const provider = new firebase.auth.GoogleAuthProvider();
-        return auth.signInWithPopup(provider);
+        const provider = new GoogleAuthProvider();
+        return signInWithPopup(auth, provider);
     };
 
     const value = {

@@ -19,7 +19,6 @@ const LoginView: React.FC = () => {
                 await login(email, password);
             }
         } catch (err: any) {
-            console.error("Registration Error:", err);
             setError(getFirebaseErrorMessage(err.code));
         }
     };
