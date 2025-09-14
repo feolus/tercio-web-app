@@ -6,6 +6,8 @@ import { UserContext } from '../context/UserContext';
 import { BattlePlan, User, BattleGroup, BattleKnight, Artillery, Troop, Weapon } from '../types';
 import { BATTLE_TASK_OPTIONS } from '../constants';
 import AssignmentModal from './AssignmentModal';
+import { db } from '../firebase';
+import { collection, onSnapshot } from 'firebase/firestore';
 
 const AvailableArtilleryPanel: React.FC<{
     artillery: Artillery[];
@@ -119,20 +121,11 @@ const BattleGroupCard: React.FC<{
 
 const BattlePlanner: React.FC = () => {
     const { addBattlePlan, savedBattlePlans, updateBattlePlan, masterArtillery, masterTroops, masterWeapons } = useContext(DataContext);
-    const { users, userFetchError } = useContext(UserContext);
 
-    if (userFetchError) {
-        return (
-            <Card>
-                <SectionHeader title="Plan de Batalla" />
-                <div className="p-4 text-center bg-red-100 border border-red-400 text-red-700 rounded-lg">
-                    <h3 className="font-bold">Error de Permisos</h3>
-                    <p>{userFetchError}</p>
-                </div>
-            </Card>
-        );
-    }
-    
+    const [users, setUsers] = useState<User[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
     const [planName, setPlanName] = useState('');
     const [planDate, setPlanDate] = useState(new Date().toISOString().split('T')[0]);
     const [activePlan, setActivePlan] = useState<BattlePlan | null>(null);
@@ -140,6 +133,45 @@ const BattlePlanner: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [assigningUser, setAssigningUser] = useState<User | null>(null);
     const [targetGroup, setTargetGroup] = useState<BattleGroup | null>(null);
+
+    useEffect(() => {
+        if (!db) {
+            setError("La conexión con la base de datos no está disponible.");
+            setLoading(false);
+            return;
+        }
+
+        const unsub = onSnapshot(collection(db, 'users'),
+            (snapshot) => {
+                setUsers(snapshot.docs.map(doc => doc.data() as User));
+                setLoading(false);
+                setError(null);
+            },
+            (err) => {
+                console.error("Error fetching users for BattlePlanner:", err);
+                setError("No tienes permiso para ver la lista de miembros.");
+                setLoading(false);
+            }
+        );
+
+        return () => unsub();
+    }, []);
+
+    if (loading) {
+        return <Card><p>Cargando miembros...</p></Card>;
+    }
+
+    if (error) {
+        return (
+            <Card>
+                <SectionHeader title="Plan de Batalla" />
+                <div className="p-4 text-center bg-red-100 border border-red-400 text-red-700 rounded-lg">
+                    <h3 className="font-bold">Error de Permisos</h3>
+                    <p>{error}</p>
+                </div>
+            </Card>
+        );
+    }
 
     const handleSaveNewPlan = () => {
         if (!planName || !planDate) {
