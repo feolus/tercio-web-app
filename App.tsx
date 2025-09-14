@@ -182,7 +182,18 @@ const App: React.FC = () => {
 
     const updateUser = async (updatedUser: User) => {
         if (!db) return;
-        await setDoc(doc(db, 'users', updatedUser.uid), updatedUser, { merge: true });
+        // First, update the local state for immediate UI feedback
+        setCurrentUser(updatedUser);
+        try {
+            // Then, persist the changes to Firestore
+            await setDoc(doc(db, 'users', updatedUser.uid), updatedUser, { merge: true });
+        } catch (error) {
+            console.error("Error updating user:", error);
+            // Optional: Revert local state if Firestore update fails
+            // For now, we'll log the error. Depending on the app's needs,
+            // you might want to show an error message to the user.
+            // Consider fetching the last known state from DB to revert.
+        }
     };
 
     const removeUser = async (uid: string) => {
