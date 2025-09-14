@@ -7,19 +7,6 @@ export enum Role {
     Escudero = 'Escudero',
 }
 
-export enum BattleTask {
-    Wall1 = 'Muralla 1',
-    Wall2 = 'Muralla 2',
-    Gate = 'Puerta Principal',
-    AttackA = 'Atacar A',
-    AttackB = 'Atacar B',
-    DefendA = 'Defender A',
-    DefendB = 'Defender B',
-    Reserve = 'Reserva',
-    Artillery = 'Artillería',
-    Flank = 'Flanco',
-}
-
 export interface UserTroop {
     troopId: string;
     mastery: boolean;
@@ -75,7 +62,7 @@ export interface BattleKnight {
 
 export interface BattleGroup {
     id:string;
-    task: BattleTask;
+    task: string;
     knights: BattleKnight[];
     artilleryIds?: string[];
 }
