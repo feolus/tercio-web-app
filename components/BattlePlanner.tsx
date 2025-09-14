@@ -2,7 +2,6 @@ import React, { useState, useContext, useMemo } from 'react';
 import Card from './common/Card';
 import SectionHeader from './common/SectionHeader';
 import { DataContext } from '../context/DataContext';
-import { UserContext } from '../context/UserContext';
 import { BattlePlan, BattleTask, User, BattleGroup, BattleKnight, Artillery, Troop, Weapon } from '../types';
 import AssignmentModal from './AssignmentModal';
 
@@ -128,8 +127,7 @@ const BattleGroupCard: React.FC<{
 
 
 const BattlePlanner: React.FC = () => {
-    const { addBattlePlan, savedBattlePlans, updateBattlePlan, masterArtillery, masterTroops, masterWeapons } = useContext(DataContext);
-    const { users } = useContext(UserContext);
+    const { addBattlePlan, savedBattlePlans, updateBattlePlan, masterArtillery, masterTroops, masterWeapons, allUsers: users } = useContext(DataContext);
     
     const [planName, setPlanName] = useState('');
     const [planDate, setPlanDate] = useState(new Date().toISOString().split('T')[0]);

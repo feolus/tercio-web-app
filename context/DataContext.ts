@@ -1,7 +1,8 @@
 import { createContext } from 'react';
-import { Troop, Weapon, Artillery, BattlePlan, NobilityTitle, Season, TitleAssignment } from '../types';
+import { Troop, Weapon, Artillery, BattlePlan, NobilityTitle, Season, TitleAssignment, User } from '../types';
 
 export interface DataContextType {
+    allUsers: User[];
     masterTroops: Troop[];
     masterWeapons: Weapon[];
     masterArtillery: Artillery[];

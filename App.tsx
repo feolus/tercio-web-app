@@ -87,6 +87,7 @@ const App: React.FC = () => {
     const { authUser, loading } = useAuth();
     
     const [currentUser, setCurrentUser] = useState<User | null>(null);
+    const [allUsers, setAllUsers] = useState<User[]>([]);
     const [error, setError] = useState<string | null>(null);
 
     const [masterTroops, setMasterTroops] = useState<Troop[]>([]);
@@ -138,10 +139,15 @@ const App: React.FC = () => {
             setTitleAssignments(snapshot.docs.map(doc => doc.data() as TitleAssignment));
         });
 
+        const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
+            setAllUsers(snapshot.docs.map(doc => doc.data() as User));
+        });
+
         return () => {
             unsubMasterData();
             unsubBattlePlans();
             unsubAssignments();
+            unsubUsers();
         };
     }, [authUser]);
 
@@ -235,6 +241,7 @@ const App: React.FC = () => {
 
     const userContextValue: UserContextType = { currentUser, error, updateUser, removeUser };
     const dataContextValue: DataContextType = {
+        allUsers,
         masterTroops, masterWeapons, masterArtillery, savedBattlePlans,
         activeWarOrderPlanId, nobilityTitles, seasons, titleAssignments,
         updateMasterData, addBattlePlan, updateBattlePlan, deleteBattlePlan, setActiveWarOrderPlanId,
